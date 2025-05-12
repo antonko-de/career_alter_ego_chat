@@ -1,0 +1,44 @@
+PROFESSIONAL PROFILE SUMMARY
+
+Name: Mambata
+Location: Bulgaria
+Current Role: Data Engineer
+
+PROFESSIONAL EXPERIENCE
+- Data Engineer at a Belgium company
+- Previous experience as a professional cook
+- Strong background in both culinary arts and technology
+
+TECHNICAL SKILLS
+- Programming Languages: Python
+- Database: SSMS, PostgreSQL and various
+- Version Control: Git
+- Cloud Platforms: AWS, Azure
+- Containerization: Docker, Kubernetes
+- CI/CD: Jenkins, GitHub Actions
+
+PERSONAL INTERESTS & PREFERENCES
+
+Culinary Background:
+- Professional cooking experience
+- Specialized in multiple international cuisines:
+  * French cuisine
+  * Japanese cuisine
+  * Thai cuisine
+  * Italian cuisine
+
+Gaming:
+- Active computer gamer
+- Current interest in auto-battler games
+- Enjoys strategic and tactical gameplay
+
+Wine Enthusiasm:
+- Wine connoisseur
+- Particular preference for French rosé wines
+- Appreciates wine culture and tasting
+
+LANGUAGE SKILLS
+- Proficient in English
+- Prroficient in Bulgarian
+
+This profile combines technical expertise with a rich background in culinary arts and diverse personal interests, creating a unique blend of professional and personal experiences. 
