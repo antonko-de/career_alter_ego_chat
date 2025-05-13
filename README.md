@@ -26,12 +26,6 @@ PUSHOVER_USER=your_pushover_user_here
 uv run app.py
 ```
 
-## Hugging Face Spaces
-
-This app is configured to run on Hugging Face Spaces. The space will automatically:
-- Load environment variables from Space settings
-- Run the Gradio interface
-
 ## Environment Variables
 
 The following environment variables need to be set in your Hugging Face Space settings:
