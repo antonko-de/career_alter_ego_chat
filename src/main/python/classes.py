@@ -1,12 +1,20 @@
+from openai import OpenAI
+import json
+import logging
+from pypdf import PdfReader
 from typing import List, Dict, Optional
 import numpy as np
 import faiss
-import json
 import os
 import re
 from dataclasses import dataclass
-from openai import OpenAI
+from src.main.python.utils_and_tools import tools, record_user_details, record_unknown_question, send_push_when_engaged
 
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# RAG system
 @dataclass
 class Document:
     text: str
@@ -158,4 +166,100 @@ class SimpleRAG:
                 embedding=np.array(doc["embedding"]) if doc["embedding"] else None
             )
             for doc in documents_data
-        ] 
+        ]
+
+# Main class
+class Me:
+    def __init__(self):
+        self.openai = OpenAI()
+        self.name = "Anton Kostov"
+        
+        # Initialize RAG system with custom chunk size
+        logger.info("Initializing RAG system...")
+        self.rag = SimpleRAG(chunk_size=300, chunk_overlap=50)
+        
+        # Load and process LinkedIn profile
+        reader = PdfReader("resources/Profile.pdf")
+        linkedin_text = ""
+        for page in reader.pages:
+            text = page.extract_text()
+            if text:
+                linkedin_text += text
+        
+        # Load summary
+        with open("resources/summary.txt", "r", encoding="utf-8") as f:
+            summary = f.read()
+        
+        # Add documents to RAG system with metadata
+        logger.info("Adding documents to RAG system...")
+        self.rag.add_documents(
+            documents=[summary, linkedin_text],
+            metadata_list=[
+                {"source": "summary", "type": "background"},
+                {"source": "linkedin", "type": "professional_profile"}
+            ]
+        )
+        
+        # Save the processed documents
+        logger.info("Saving RAG data...")
+        self.rag.save("rag_data")
+        logger.info("Initialization complete!")
+
+    def handle_tool_call(self, tool_calls):
+        results = []
+        for tool_call in tool_calls:
+            tool_name = tool_call.function.name
+            arguments = json.loads(tool_call.function.arguments)
+            print(f"Tool called: {tool_name}", flush=True)
+            tool_map = {
+                "record_user_details": record_user_details,
+                "record_unknown_question": record_unknown_question,
+                "send_push_when_engaged": send_push_when_engaged
+            }
+            tool = tool_map.get(tool_name)
+            result = tool(**arguments) if tool else {}
+            results.append({"role": "tool","content": json.dumps(result),"tool_call_id": tool_call.id})
+        return results
+    
+    def system_prompt(self):
+        system_prompt = f"You are acting as {self.name}. You are answering questions on {self.name}'s website, \
+particularly questions related to {self.name}'s career, background, skills and experience. \
+Your responsibility is to represent {self.name} for interactions on the website as faithfully as possible. \
+You are given a summary of {self.name}'s background and LinkedIn profile which you can use to answer questions. \
+Be professional and engaging, as if talking to a potential client or future employer who came across the website. \
+When the user greets you, use your send_push_when_engaged tool to send a push notification. \
+If you don't know the answer to any question, use your record_unknown_question tool to record the question that you couldn't answer, even if it's about something trivial or unrelated to career. \
+If the user is engaging in discussion, try to steer them towards getting in touch via email; ask for their email and record it using your record_user_details tool. "
+
+        system_prompt += f"With this context, please chat with the user, always staying in character as {self.name}."
+        return system_prompt
+    
+    def chat(self, message, history):
+        logger.info(f"Received message: {message[:100]}...")
+        # Get relevant context from RAG
+        results = self.rag.search(message, k=3)
+        context = self.rag.format_context(results)
+        logger.info(f"Retrieved {len(results)} relevant documents")
+        
+        # Add context to the message with clear separation
+        enhanced_message = f"""Here is the relevant context from my background:
+
+{context}
+
+Based on this context, please answer the following question:
+{message}"""
+        
+        messages = [{"role": "system", "content": self.system_prompt()}] + history + [{"role": "user", "content": enhanced_message}]
+        done = False
+        while not done:
+            response = self.openai.chat.completions.create(model="gpt-4o-mini", messages=messages, tools=tools)
+            if response.choices[0].finish_reason=="tool_calls":
+                message = response.choices[0].message
+                tool_calls = message.tool_calls
+                results = self.handle_tool_call(tool_calls)
+                messages.append(message)
+                messages.extend(results)
+            else:
+                done = True
+        logger.info("Generated response successfully")
+        return response.choices[0].message.content 
