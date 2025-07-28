@@ -8,7 +8,7 @@ import faiss
 import os
 import re
 from dataclasses import dataclass
-from src.main.python.utils_and_tools import tools, record_user_details, record_unknown_question, send_push_when_engaged
+from utils_and_tools import tools, record_user_details, record_unknown_question, send_push_when_engaged
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
